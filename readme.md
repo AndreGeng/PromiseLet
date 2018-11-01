@@ -8,13 +8,13 @@ Promise A+ implementation for learning purpose.
 3. rejected态的promise, 不可再转变为其它态，它有且仅有一个不变的reason
 
 # then方法
-3. promise对象有then方法，它接收两个可选参数onFulfilled, onRejected, 这两个参数不为function则被ignore
-4. 如果onFulfilled是一个方法，只能在promise被fulfill时被调用一次。它的第一个参数是promise被fulfill时的value
-5. 如果onRejected是一个方法，只能在promise被reject时被调用一次。 它的第一个参数是promise被reject时的reason
-6. onFulfilled/onRejected必须是被异步调用的
-7. onFulfilled/onRejected必须以函数的方式被调用（也就是说函数内部的this为undefined/global）
-8. then方法可以在一个promise上调用多次，当promise被fulfill时，这些回调执行的顺序，遵循它们添加的顺序，被reject时同理
-9. then方法的返回值为promise. promise2 = promise1.then(onFulfilled, onRejected)
+1. promise对象有then方法，它接收两个可选参数onFulfilled, onRejected, 这两个参数不为function则被ignore
+2. 如果onFulfilled是一个方法，只能在promise被fulfill时被调用一次。它的第一个参数是promise被fulfill时的value
+3. 如果onRejected是一个方法，只能在promise被reject时被调用一次。 它的第一个参数是promise被reject时的reason
+4. onFulfilled/onRejected必须是被异步调用的
+5. onFulfilled/onRejected必须以函数的方式被调用（也就是说函数内部的this为undefined/global）
+6. then方法可以在一个promise上调用多次，当promise被fulfill时，这些回调执行的顺序，遵循它们添加的顺序，被reject时同理
+7. then方法的返回值为promise. promise2 = promise1.then(onFulfilled, onRejected)
   - 如果onFulfilled/onRejected返回value x, 遵循[[Resolve]](promise2, x)
   - 如果onFulfilled/onRejected抛出异常e, promise2也要以e为reason被reject.
   - 如果onFulfilled不为function, promise1 fulfill时，promise2要以同样的value被fulfill
