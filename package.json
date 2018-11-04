@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "jest"
+    "test": "npm run debug && jest && promises-aplus-tests test/my-adapter",
+    "build": "gulp build",
+    "debug": "NODE_ENV=debug gulp build"
   },
   "keywords": [],
   "author": "",
@@ -15,7 +17,12 @@
     "@babel/preset-env": "^7.1.0",
     "babel-core": "^7.0.0-bridge.0",
     "babel-jest": "^23.6.0",
-    "jest": "^23.6.0"
+    "gulp": "^3.9.1",
+    "gulp-babel": "^8.0.0-beta.2",
+    "gulp-if": "^2.0.2",
+    "gulp-sourcemaps": "^2.6.4",
+    "jest": "^23.6.0",
+    "promises-aplus-tests": "^2.1.2"
   },
   "dependencies": {
     "object-assign": "^4.1.1"

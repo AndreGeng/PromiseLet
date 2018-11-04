@@ -21,6 +21,12 @@ const nextTick = (cb) => {
 const isPromise = (value) => {
   return value instanceof PromiseLet;
 };
+const isObject = (obj) => {
+  return obj && typeof obj === 'object';
+};
+const isFunction = (value) => {
+  return typeof value === 'function';
+};
 
 
 /**
@@ -50,13 +56,13 @@ function processChain(target) {
     chain,
     status,
   } = this.state;
-  chain.forEach(({ onFulfilled, onRejected }) => nextTick(() => {
+  chain.forEach(({ onFulfilled, onRejected }) => {
     if (status === STATUS_ENUM.FULFILLED) {
       onFulfilled.call(this, target.value);
     } else if (status === STATUS_ENUM.REJECTED) {
       onRejected.call(this, target.reason);
     }
-  }));
+  });
 }
 
 function onFulfilled(value) {
@@ -64,18 +70,21 @@ function onFulfilled(value) {
     throw new TypeError('Chaining cycle detected for promise');
   }
   if (isPromise(value)) {
-    return value.then(onFulfilled.bind(this), onRejected.bind(this));
-  } else if (typeof value === 'object' || typeof value == 'function') {
-    if (typeof value.then !== 'function') {
-      return transition.call(this, STATUS_ENUM.FULFILLED, { value });
-    }
+    value.then(onFulfilled.bind(this), onRejected.bind(this));
+  } else if (isObject(value) || isFunction(value)) {
     try {
-      value.then(onFulfilled.bind(this), onRejected.bind(this));
-    } catch (e) {
+      const then = value.then;
+      if (isFunction(then)) {
+        then.call(value, onFulfilled.bind(this), onRejected.bind(this));
+      } else {
+        transition.call(this, STATUS_ENUM.FULFILLED, { value });
+      }
+    } catch(e) {
       onRejected.call(this, e);
     }
+  } else {
+    transition.call(this, STATUS_ENUM.FULFILLED, { value });
   }
-  return transition.call(this, STATUS_ENUM.FULFILLED, { value });
 }
 function onRejected(reason) {
   const {
@@ -118,30 +127,36 @@ class PromiseLet {
     return new PromiseLet((onFulfilled2, onRejected2) => {
       const chainObj = {
         onFulfilled(value) {
-          try {
-            if (typeof onFulfilled === 'function') {
-              onFulfilled2(onFulfilled(value));
+          nextTick(() => {
+            try {
+              if (typeof onFulfilled === 'function') {
+                onFulfilled2(onFulfilled(value));
+              } else {
+                onFulfilled2(value);
+              }
+            } catch (e) {
+              onRejected2(e);
             }
-            onFulfilled2(value);
-          } catch (e) {
-            onRejected2(e);
-          }
+          });
         },
         onRejected(reason) {
-          try {
-            if (typeof onRejected === 'function') {
-              onFulfilled2(onRejected(reason));
+          nextTick(() => {
+            try {
+              if (typeof onRejected === 'function') {
+                onFulfilled2(onRejected(reason));
+              } else {
+                onRejected2(reason);
+              }
+            } catch (e) {
+              onRejected2(e);
             }
-            onRejected2(reason);
-          } catch (e) {
-            onRejected2(e);
-          }
+          });
         },
       };
       if (status === STATUS_ENUM.FULFILLED) {
-        nextTick(() => chainObj.onFulfilled(value));
+        chainObj.onFulfilled(value);
       } else if (status === STATUS_ENUM.REJECTED) {
-        nextTick(() => chainObj.onRejected(reason));
+        chainObj.onRejected(reason);
       } else {
         chain.push(chainObj);
       }

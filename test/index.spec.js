@@ -1,4 +1,4 @@
-import PromiseLet from '../src/index.js';
+import PromiseLet from '../dist/index.js';
 
 describe('Promise', () => {
   describe('then method', () => {
@@ -225,7 +225,7 @@ describe('Promise', () => {
         }, 0);
       });
     });
-    test('if resolve with a resolved promise, then returned promise should also be resolved', () => {
+    test('if resolve with a resolved promise, then returned promise should also be resolved', (done) => {
       const onFulfilled = jest.fn();
       let pResolve;
       const p = new PromiseLet((resolve) => {
@@ -239,12 +239,13 @@ describe('Promise', () => {
           setTimeout(() => {
             expect(onFulfilled.mock.calls.length).toBe(1);
             expect(onFulfilled.mock.calls[0][0]).toBe('value');
+            done();
           }, 0);
         }, 0);
       });
       p2.then(onFulfilled);
     });
-    test('if resolve with a rejected promise, then returned promise should also be rejected', () => {
+    test('if resolve with a rejected promise, then returned promise should also be rejected', (done) => {
       const onRejected = jest.fn();
       let pReject;
       const p = new PromiseLet((resolve, reject) => {
@@ -258,10 +259,25 @@ describe('Promise', () => {
           setTimeout(() => {
             expect(onRejected.mock.calls.length).toBe(1);
             expect(onRejected.mock.calls[0][0]).toBe('reason');
+            done();
           }, 0);
         }, 0);
       });
       p2.then(null, onRejected);
+    });
+    test('if resolved with a already solved promise, then returned promse should be resolved with the same value', () => {
+      const onFulfilled = jest.fn();
+      const p = new PromiseLet((resolve) => {
+        resolve('value');
+      });
+      const p2 = new PromiseLet((resolve) => {
+        resolve(p);
+        setTimeout(() => {
+          expect(onFulfilled.mock.calls.length).toBe(1);
+          expect(onFulfilled.mock.calls[0][0]).toBe('value');
+        }, 0);
+      });
+      p2.then(onFulfilled);
     });
     test('if resolve with an object/function x, without then function, should resolve with x', () => {
       const onFulfilled = jest.fn();
@@ -307,6 +323,24 @@ describe('Promise', () => {
       });
       p.then(onFulfilled);
     });
+    test('if resolvePromise asynchronously resolved with value, promise should always resolved with value', (done) => {
+      const onFulfilled = jest.fn();
+      const result = {
+        then(resolve) {
+          setTimeout(() => {
+            resolve(null);
+          }, 0);
+        }
+      };
+      const p = new PromiseLet((resolve) => {
+        resolve(result);
+        setTimeout(() => {
+          expect(onFulfilled.mock.calls[0][0]).toBe(null);
+          done();
+        }, 10);
+      });
+      p.then(onFulfilled);
+    });
     test('if resolvePromise rejected with reason, promise should always rejected with reason', (done) => {
       const onRejected = jest.fn();
       const result = {
@@ -323,25 +357,44 @@ describe('Promise', () => {
       });
       p.then(null, onRejected);
     });
-    test('if resolvePromise called multiple times, only take the first value', (done) => {
+    test.only('if resolvePromise called multiple times asynchronously, only take the first value', (done) => {
       const onFulfilled = jest.fn();
       const result = {
-        then(resolve) {
-          resolve('value');
-          resolve('value2');
-          resolve('value3');
+        then(resolve) { // x
+          resolve({
+            then(res) { // y
+              res({ value: 'value' });
+              res({ value: 'value2' });
+            }
+          });
         }
       };
       const p = new PromiseLet((resolve) => {
-        resolve(result);
-        setTimeout(() => {
-          expect(onFulfilled.mock.calls.length).toBe(1);
-          expect(onFulfilled.mock.calls[0][0]).toBe('value');
-          done();
-        }, 0);
-      });
+        resolve({ dummy: 'dummy' }); // x is object/function
+      }).then((value) => result);
       p.then(onFulfilled);
+      setTimeout(() => {
+        expect(onFulfilled.mock.calls.length).toBe(1);
+        expect(onFulfilled.mock.calls[0][0]).toBe('value');
+        done();
+      }, 100);
     });
+    // test.only('if resolvePromise called multiple times asynchronously, only take the first value', (done) => {
+    //   const onFulfilled = jest.fn();
+    //   const result = new PromiseLet((resolve) => {
+    //     setTimeout(() => resolve('value'), 10);
+    //   });
+    //   const p = new PromiseLet((resolve) => {
+    //     resolve(result); // x is object/function
+    //     resolve('value2');
+    //     setTimeout(() => {
+    //       expect(onFulfilled.mock.calls.length).toBe(1);
+    //       expect(onFulfilled.mock.calls[0][0]).toBe('value');
+    //       done();
+    //     }, 10);
+    //   });
+    //   p.then(onFulfilled);
+    // });
     test('if rejectPromise called multiple times, only take the first reason', (done) => {
       const onRejected = jest.fn();
       const result = {
@@ -361,7 +414,7 @@ describe('Promise', () => {
       });
       p.then(null, onRejected);
     });
-    test.only('if x.then throw error, resolvePromise is called, ignore the error', (done) => {
+    test('if x.then throw error, resolvePromise is called, ignore the error', (done) => {
       const onFulfilled = jest.fn();
       const err = new Error('error');
       const result = {
