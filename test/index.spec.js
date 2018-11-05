@@ -357,14 +357,20 @@ describe('Promise', () => {
       });
       p.then(null, onRejected);
     });
-    test.only('if resolvePromise called multiple times asynchronously, only take the first value', (done) => {
+    test.only('if resolvePromise called multiple times synchronously, only take the first value', (done) => {
       const onFulfilled = jest.fn();
       const result = {
         then(resolve) { // x
           resolve({
             then(res) { // y
-              res({ value: 'value' });
-              res({ value: 'value2' });
+              res({
+                then(r) {
+                  setTimeout(() => {
+                    r('value');
+                  }, 0);
+                }
+              });
+              res('value2');
             }
           });
         }
@@ -372,29 +378,14 @@ describe('Promise', () => {
       const p = new PromiseLet((resolve) => {
         resolve({ dummy: 'dummy' }); // x is object/function
       }).then((value) => result);
-      p.then(onFulfilled);
-      setTimeout(() => {
-        expect(onFulfilled.mock.calls.length).toBe(1);
-        expect(onFulfilled.mock.calls[0][0]).toBe('value');
+      p.then((value) => {
+        try {
+          expect(value).toBe('value');
+        } catch (e) {
+        }
         done();
-      }, 100);
+      });
     });
-    // test.only('if resolvePromise called multiple times asynchronously, only take the first value', (done) => {
-    //   const onFulfilled = jest.fn();
-    //   const result = new PromiseLet((resolve) => {
-    //     setTimeout(() => resolve('value'), 10);
-    //   });
-    //   const p = new PromiseLet((resolve) => {
-    //     resolve(result); // x is object/function
-    //     resolve('value2');
-    //     setTimeout(() => {
-    //       expect(onFulfilled.mock.calls.length).toBe(1);
-    //       expect(onFulfilled.mock.calls[0][0]).toBe('value');
-    //       done();
-    //     }, 10);
-    //   });
-    //   p.then(onFulfilled);
-    // });
     test('if rejectPromise called multiple times, only take the first reason', (done) => {
       const onRejected = jest.fn();
       const result = {

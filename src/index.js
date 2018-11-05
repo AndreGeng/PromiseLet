@@ -66,16 +66,27 @@ function processChain(target) {
 }
 
 function onFulfilled(value) {
+  let called = false;
   if (value === this) {
     throw new TypeError('Chaining cycle detected for promise');
   }
   if (isPromise(value)) {
-    value.then(onFulfilled.bind(this), onRejected.bind(this));
+    value.then((value2) => {
+      if (!called) {
+        called = true;
+        onFulfilled.call(this, value2);
+      }
+    }, onRejected.bind(this));
   } else if (isObject(value) || isFunction(value)) {
     try {
       const then = value.then;
       if (isFunction(then)) {
-        then.call(value, onFulfilled.bind(this), onRejected.bind(this));
+        then.call(value, (value2) => {
+          if (!called) {
+            called = true;
+            onFulfilled.call(this, value2);
+          }
+        }, onRejected.bind(this));
       } else {
         transition.call(this, STATUS_ENUM.FULFILLED, { value });
       }
