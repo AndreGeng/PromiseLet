@@ -121,6 +121,9 @@ function onRejected(reason) {
 }
 class PromiseLet {
   constructor(cb) {
+    if (typeof cb !== 'function') {
+      throw new TypeError(`Promise resolver ${cb} is not a function`);
+    }
     this.state = {
       status: STATUS_ENUM.PENDING,
       chain: [],
@@ -129,17 +132,40 @@ class PromiseLet {
     };
     cb(onFulfilled.bind(this), onRejected.bind(this));
   }
-  static all() {
+  static all(...args) {
+    let resolveCount = 0;
+    let result = [];
+    return new PromiseLet((resolve, reject) => {
+      args.forEach((promise, index) => {
+        promise.then((value) => {
+          resolveCount++;
+          result[index] = value;
+          if (resolveCount === args.length) {
+            resolve(result);
+          }
+        }, reject);
+      });
 
+    });
   }
-  static race() {
-
+  static race(...args) {
+    return new PromiseLet((resolve, reject) => {
+      args.forEach((promise) => {
+        promise.then(resolve, reject);
+      });
+    });
   }
-  static resolve() {
-
+  static resolve(value) {
+    if (isPromise(value)) {
+      return value;
+    }
+    return new PromiseLet((resolve) => resolve(value));
   }
-  static reject() {
-
+  static reject(reason) {
+    if (isPromise(reason)) {
+      return reason;
+    }
+    return new PromiseLet((resolve, reject) => reject(reason));
   }
   then(onFulfilled, onRejected) {
     const {
@@ -189,8 +215,8 @@ class PromiseLet {
   catch(onRejected) {
     this.then(null, onRejected);
   }
-  finally() {
-
+  finally(cb) {
+    return this.then(cb, cb);
   }
 }
 
