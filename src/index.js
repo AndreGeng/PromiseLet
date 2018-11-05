@@ -76,7 +76,12 @@ function onFulfilled(value) {
         called = true;
         onFulfilled.call(this, value2);
       }
-    }, onRejected.bind(this));
+    }, (reason) => {
+      if (!called) {
+        called = true;
+        onRejected.call(this, reason);
+      }
+    });
   } else if (isObject(value) || isFunction(value)) {
     try {
       const then = value.then;
@@ -86,12 +91,20 @@ function onFulfilled(value) {
             called = true;
             onFulfilled.call(this, value2);
           }
-        }, onRejected.bind(this));
+        }, (reason) => {
+          if (!called) {
+            called = true;
+            onRejected.call(this, reason);
+          }
+        });
       } else {
         transition.call(this, STATUS_ENUM.FULFILLED, { value });
       }
     } catch(e) {
-      onRejected.call(this, e);
+      if (!called) {
+        called = true;
+        onRejected.call(this, e);
+      }
     }
   } else {
     transition.call(this, STATUS_ENUM.FULFILLED, { value });
