@@ -1,16 +1,16 @@
+Promise A+ implementation for learning purpose.
+
 <a href="https://promisesaplus.com/">
     <img src="https://promisesaplus.com/assets/logo-small.png" alt="Promises/A+ logo"
          title="Promises/A+ 1.0 compliant" align="right" />
 </a>
 
-Promise A+ implementation for learning purpose.
-
-Promise.resolve
-Promise.reject
-Promise.all
-Promise.race
-Promise.prototype.catch
-Promise.prototype.finally
+- Promise.resolve
+- Promise.reject
+- Promise.all
+- Promise.race
+- Promise.prototype.catch
+- Promise.prototype.finally
 is not strictly implemented as [ECMA-262](https://www.ecma-international.org/ecma-262/6.0/).
 
 Again this project is for learning purpose^_^
